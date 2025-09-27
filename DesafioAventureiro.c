@@ -77,7 +77,7 @@ int main(){
     printf("PIB: %.1f\n", PIB2);
     printf("Ponto Turisticos: %d\n", pturistico2);
 
-
+//comparação de atributos
         int (opcao);
  {
         printf("\nEscolha o atributo para comparação:\n");
