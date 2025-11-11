@@ -55,19 +55,7 @@ void build_octa(int octa[MAT][MAT]) {
     }
 }
 
-/*
- Overlay da matriz de habilidade no tabuleiro.
- - board: tabuleiro NxN
- - mat: matriz da habilidade (size x size)
- - size: tamanho da matriz (MAT)
- - origin_r, origin_c: coordenadas do ponto de origem no tabuleiro (0-based)
- - anchor: "top" ou "center" indica qual elemento da matriz corresponde ao ponto de origem
-     - "top": usa a linha 0 da matriz como linha do ponto de origem (apto para o cone)
-     - "center": usa o centro da matriz como ponto de origem (para cruz e octaedro)
- Regras de sobreposição:
- - Se a célula do mat == 1 => marca área afetada no tabuleiro com valor 5,
-   **mas não sobrescreve navios (valor 3)**. Ou seja, se já houver navio, mantém 3.
-*/
+
 void overlay(int board[N][N], int mat[MAT][MAT], int size,
              int origin_r, int origin_c, const char *anchor) {
 
@@ -162,15 +150,6 @@ int main(void) {
     // --- Exibe resultado ---
     print_board(board);
 
-    // Para debug: opcionalmente, mostrar as matrizes geradas (descomente se quiser)
-    /*
-    printf("Matriz Cone:\n");
-    for (int i=0;i<MAT;i++){ for(int j=0;j<MAT;j++) printf("%d ", cone[i][j]); printf("\n"); }
-    printf("\nMatriz Cruz:\n");
-    for (int i=0;i<MAT;i++){ for(int j=0;j<MAT;j++) printf("%d ", cross[i][j]); printf("\n"); }
-    printf("\nMatriz Octa:\n");
-    for (int i=0;i<MAT;i++){ for(int j=0;j<MAT;j++) printf("%d ", octa[i][j]); printf("\n"); }
-    */
 
     return 0;
 }
