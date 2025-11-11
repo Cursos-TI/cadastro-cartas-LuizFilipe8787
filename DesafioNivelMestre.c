@@ -1,107 +1,176 @@
 #include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#define N 10        // tamanho do tabuleiro (10x10)
+#define MAT 5       // tamanho das matrizes de habilidade (5x5)
 
-void bispo(int n){
-    /* 
-        Movimenta o bispo 5 casas na diagonal para direita/cima.
-        Contando com a posição atual da peça.
-        O movimento do bispo foi feito andando uma casa para direita e depois uma casa para cima.
-        Terminando com 5 casas na diagonal.
-    */
-   
-    if(n > 0){
-        for (int y = 0; y < 1; y++)
-        {
-            //Imprime o movimento para direita e para cima, até que o valor de x chegue a 5.
-            printf("Mover para cima\n");
-            for (int x = 0; x < 1; x++)
-            {
-                printf("Mover para direita\n");
+// Função que inicializa o tabuleiro com zeros
+void init_board(int board[N][N]) {
+    for (int i = 0; i < N; ++i)
+        for (int j = 0; j < N; ++j)
+            board[i][j] = 0;
+}
+
+// Gera a matriz "cone" (apex no topo, expandindo para baixo).
+// Usamos MAT x MAT; o 'topo' do cone está na linha 0, coluna central.
+void build_cone(int cone[MAT][MAT]) {
+    int center = MAT / 2;
+    for (int i = 0; i < MAT; ++i) {
+        for (int j = 0; j < MAT; ++j) {
+            // posição afetada se estiver entre center - i .. center + i (forma de cone apontando pra baixo)
+            if (j >= center - i && j <= center + i)
+                cone[i][j] = 1;
+            else
+                cone[i][j] = 0;
+        }
+    }
+}
+
+// Gera a matriz "cruz" (ponto de origem no centro).
+void build_cross(int cross[MAT][MAT]) {
+    int center = MAT / 2;
+    for (int i = 0; i < MAT; ++i) {
+        for (int j = 0; j < MAT; ++j) {
+            // linha central ou coluna central -> cruz
+            if (i == center || j == center)
+                cross[i][j] = 1;
+            else
+                cross[i][j] = 0;
+        }
+    }
+}
+
+// Gera a matriz "octaedro" vista frontal -> losango (diamond).
+// Usamos distância de Manhattan ao centro <= center para formar o losango.
+void build_octa(int octa[MAT][MAT]) {
+    int center = MAT / 2;
+    for (int i = 0; i < MAT; ++i) {
+        for (int j = 0; j < MAT; ++j) {
+            int manhattan = abs(i - center) + abs(j - center);
+            if (manhattan <= center)
+                octa[i][j] = 1;
+            else
+                octa[i][j] = 0;
+        }
+    }
+}
+
+/*
+ Overlay da matriz de habilidade no tabuleiro.
+ - board: tabuleiro NxN
+ - mat: matriz da habilidade (size x size)
+ - size: tamanho da matriz (MAT)
+ - origin_r, origin_c: coordenadas do ponto de origem no tabuleiro (0-based)
+ - anchor: "top" ou "center" indica qual elemento da matriz corresponde ao ponto de origem
+     - "top": usa a linha 0 da matriz como linha do ponto de origem (apto para o cone)
+     - "center": usa o centro da matriz como ponto de origem (para cruz e octaedro)
+ Regras de sobreposição:
+ - Se a célula do mat == 1 => marca área afetada no tabuleiro com valor 5,
+   **mas não sobrescreve navios (valor 3)**. Ou seja, se já houver navio, mantém 3.
+*/
+void overlay(int board[N][N], int mat[MAT][MAT], int size,
+             int origin_r, int origin_c, const char *anchor) {
+
+    int anchor_row = 0;
+    int anchor_col = size / 2; // por padrão centro horizontal
+
+    if (strcmp(anchor, "center") == 0) {
+        anchor_row = size / 2;
+        anchor_col = size / 2;
+    } else if (strcmp(anchor, "top") == 0) {
+        anchor_row = 0;
+        anchor_col = size / 2;
+    } else {
+        // fallback para center
+        anchor_row = size / 2;
+        anchor_col = size / 2;
+    }
+
+    // Calcula a posição da célula mat[0..size-1][0..size-1] no tabuleiro
+    for (int i = 0; i < size; ++i) {
+        for (int j = 0; j < size; ++j) {
+            if (mat[i][j] != 1) continue; // só interessa células afetadas
+
+            int board_r = origin_r + (i - anchor_row);
+            int board_c = origin_c + (j - anchor_col);
+
+            // garante dentro dos limites do tabuleiro
+            if (board_r >= 0 && board_r < N && board_c >= 0 && board_c < N) {
+                // marca 5 apenas se não for navio (3). Mantemos navio visível.
+                if (board[board_r][board_c] == 0) {
+                    board[board_r][board_c] = 5;
+                }
+                // se for 3 (navio), deixamos 3 para não sobrescrever visualmente
             }
-            
         }
-
-        bispo(n-1);
     }
 }
 
-void torre(int n){
-    /* 
-        Movimenta a torre 5 casas para cima.
-        Contando com a posição atual da peça.
+// Função para imprimir o tabuleiro no console
+// 0 = água, 3 = navio, 5 = área afetada
+void print_board(int board[N][N]) {
+    printf("\nTabuleiro (0=agua, 3=navio, 5=area afetada):\n\n");
+    for (int i = 0; i < N; ++i) {
+        for (int j = 0; j < N; ++j) {
+            printf("%d ", board[i][j]);
+        }
+        printf("\n");
+    }
+    printf("\n");
+}
+
+int main(void) {
+    int board[N][N];
+    init_board(board);
+
+    // --- Coloca alguns navios (valor 3) para demonstrar sobreposição ---
+    // Exemplo simples: três partes de navio espalhadas
+    board[2][2] = 3;
+    board[2][3] = 3;
+    board[2][4] = 3;
+
+    board[5][6] = 3;
+    board[6][6] = 3;
+
+    board[8][1] = 3;
+
+    // --- Constrói as matrizes de habilidade dinamicamente ---
+    int cone[MAT][MAT];
+    int cross[MAT][MAT];
+    int octa[MAT][MAT];
+
+    build_cone(cone);    // cone com apex no topo
+    build_cross(cross);  // cruz com origem no centro
+    build_octa(octa);    // losango (octaedro frontal) com origem no centro
+
+    // --- Definir pontos de origem no tabuleiro (0-based) ---
+    // Observação: posição definida diretamente no código conforme enunciado
+    int origin_cone_r = 0;  // ex.: topo row 0 (o cone aponta para baixo a partir daqui)
+    int origin_cone_c = 2;
+
+    int origin_cross_r = 6;
+    int origin_cross_c = 6;
+
+    int origin_octa_r = 4;
+    int origin_octa_c = 8;
+
+    // --- Sobrepõe as habilidades no tabuleiro ---
+    overlay(board, cone, MAT, origin_cone_r, origin_cone_c, "top");     // cone: apex no topo
+    overlay(board, cross, MAT, origin_cross_r, origin_cross_c, "center"); // cruz: centro
+    overlay(board, octa, MAT, origin_octa_r, origin_octa_c, "center");   // octaedro: centro
+
+    // --- Exibe resultado ---
+    print_board(board);
+
+    // Para debug: opcionalmente, mostrar as matrizes geradas (descomente se quiser)
+    /*
+    printf("Matriz Cone:\n");
+    for (int i=0;i<MAT;i++){ for(int j=0;j<MAT;j++) printf("%d ", cone[i][j]); printf("\n"); }
+    printf("\nMatriz Cruz:\n");
+    for (int i=0;i<MAT;i++){ for(int j=0;j<MAT;j++) printf("%d ", cross[i][j]); printf("\n"); }
+    printf("\nMatriz Octa:\n");
+    for (int i=0;i<MAT;i++){ for(int j=0;j<MAT;j++) printf("%d ", octa[i][j]); printf("\n"); }
     */
 
-    if(n > 0){
-        //Imprime o movimento para cima, até que o contador chegue a 5.
-        printf("Mover para cima\n");
-        torre(n-1);
-    }
-    
-    
-    
-    
-}
-
-void rainha(int n){
-    /* 
-        Movimenta a rainha 8 casas para a esquerda, saindo do lado direito do tabuleiro para o esquerdo.
-        Contando com a posição atual da peça.
-    */
-    if(n > 0){
-        //Imprime o movimento para esquerda, até que o contador chegue a 8.
-        printf("Mover para esquerda\n");
-        rainha(n-1);
-    } 
-    
-}
-
-void cavalo(){
-    int cont = 0;
-    for(int i = 0; i < 1; i++){
-        while (cont<2)
-        {
-         printf("Mover para baixo\n");
-         printf("\n"); 
-         cont++;
-        }
-        printf("Mover para esquerda\n");
-    }
-}
-
-int main() {
-    int opcao = 10;
-    
-    //Enquanto a opção for diferente de 0, o programa pergunta qual peça deseja mover.
-    while (opcao != 0)
-{
-    printf("Escolha a peça que deseja mover: \n");
-    printf("1 - Bispo\n");
-    printf("2 - Torre\n");
-    printf("3 - Rainha\n");
-    printf("4 - Cavalo\n");
-    printf("0 - Sair\n");
-    scanf("%d", &opcao);
-
-    //Chama a função referente a peça escolhida.
-    switch (opcao) {
-        case 1:
-            bispo(5);
-            break;
-        case 2:
-            torre(5);
-            break;
-        case 3:
-            rainha(8);
-            break;
-        case 4:
-            cavalo();
-            break;
-        case 0:
-            break;
-        default:
-            printf("Opção inválida\n");
-            break;
-    }
-}      
-    
     return 0;
 }
